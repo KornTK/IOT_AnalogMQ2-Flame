@@ -6,55 +6,63 @@
 #define BLYNK_PRINT Serial
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
+#include <ESP8266HTTPClient.h>
 
 char ssid[] = "KornTK-2.4G";
 char pass[] = "pokde111*";
+String APIserver = "https://iot.korntk.com/iot-pro1/iot-api1.php?";
 
-int analogPin = A0; //ประกาศตัวแปร ให้ analogPin แทนขา analog ขาที่5
-int sensor_Flame = 5;
+int analogPin = A0;
+int sensor_Flame = 5; // Assuming the flame sensor is connected to pin D5
 
 int MQ = 0;
 int Flam = 0;
+
 void setup() {
   Serial.begin(9600);
-
-    Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
-
-  pinMode(BUZZER_PIN,OUTPUT);
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  pinMode(BUZZER_PIN, OUTPUT);
 }
+
 void loop() {
-    Blynk.run();
+  Blynk.run();
+  HTTPClient http;
 
-MQ = analogRead(analogPin); //อ่านค่าสัญญาณ analog ขา5
-Flam = digitalRead(sensor_Flame);
-Serial.print("Flame = "); // พิมพ์ข้อมความส่งเข้าคอมพิวเตอร์ "Flame = "
-Serial.println(Flam);
-Blynk.virtualWrite(V1, Flam);
+  MQ = analogRead(analogPin);
+  Flam = digitalRead(sensor_Flame);
 
-Serial.print("val = "); // พิมพ์ข้อมความส่งเข้าคอมพิวเตอร์ "MQ = "
-Serial.println(MQ); // พิมพ์ค่าของตัวแปร val
-Blynk.virtualWrite(V0, MQ);
+  Serial.print("Flame = ");
+  Serial.println(Flam);
+  Blynk.virtualWrite(V1, Flam);
 
-if (MQ > 500) { // สามารถกำหนดปรับค่าได้ตามสถานที่ต่างๆ
-  digitalWrite(BUZZER_PIN,LOW);   //เปิดเสียงเตือน}
-  Blynk.virtualWrite(V10, 1);
-  delay(2500);
+  Serial.print("Mq2 = ");
+  Serial.println(MQ);
+  Blynk.virtualWrite(V0, MQ);
 
-}else {
-  digitalWrite(BUZZER_PIN,HIGH);   //ปิดเสียงเตือน}
-  Blynk.virtualWrite(V10, 0);
-
-    if (Flam == 0) { // สามารถกำหนดปรับค่าได้ตามสถานที่ต่างๆ
-    digitalWrite(BUZZER_PIN,LOW);   //เปิดเสียงเตือน}
+  if (MQ > 500 || Flam == 0) {
+    digitalWrite(BUZZER_PIN, LOW);
     Blynk.virtualWrite(V10, 1);
+    APIserver = "https://iot.korntk.com/iot-pro1/iot-api1.php?mq2=" + String(MQ) + "&flarm=" + String(Flam); // Construct API URL
+    Serial.print(APIserver);
+    WiFiClientSecure client; // Create a WiFiClientSecure object for HTTPS
+    client.setInsecure(); // Allow insecure connections (not recommended in production)
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS); // Follow strict redirects
+    http.begin(client, APIserver);
+    int httpResponseCode = http.GET();
+    if (httpResponseCode > 0) {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+      String payload = http.getString();
+      Serial.println(payload);
+    } else {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
     delay(2500);
+  } else {
+    digitalWrite(BUZZER_PIN, HIGH);
+    Blynk.virtualWrite(V10, 0);
+  }
 
-    }else {
-      digitalWrite(BUZZER_PIN,HIGH);   //ปิดเสียงเตือน}
-      Blynk.virtualWrite(V10, 0);
-
-
-  };
-};
-delay(500);
+  delay(500);
 }
