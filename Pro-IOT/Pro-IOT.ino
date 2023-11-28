@@ -37,7 +37,7 @@ void setup() {
   WiFi.begin(ssid, pass);
     while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
-    delay(400);
+    delay(200);
   }
   Serial.printf("\nWiFi connected\nIP : ");
   Serial.println(WiFi.localIP());
@@ -68,7 +68,7 @@ void loop() {
   Serial.println(MQ);
   Blynk.virtualWrite(V0, MQ);
 
-  if (MQ > 500 || Flam == 0) {
+  if (MQ > 120 || Flam == 0) {
     digitalWrite(BUZZER_PIN, LOW);
     Blynk.virtualWrite(V10, 1);
     APIserver = "https://iot.korntk.com/iot-pro1/iot-api1.php?mq2=" + String(MQ) + "&flarm=" + String(Flam); // Construct API URL
@@ -102,11 +102,11 @@ void loop() {
       Serial.print("Error code: ");
       Serial.println(httpResponseCode);
     }
-    delay(2500);
+    delay(1000);
   } else {
     digitalWrite(BUZZER_PIN, HIGH);
     Blynk.virtualWrite(V10, 0);
   }
 
-  delay(500);
+  delay(300);
 }
